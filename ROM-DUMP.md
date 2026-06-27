@@ -7,8 +7,8 @@ hard boundary for the static RE here: several scheduler leaf functions delegate
 into it. This documents how the ROM was read off a live adapter with no JTAG, and
 what it contains.
 
-The ROM bytes are MediaTek's and are not redistributed in this repo. What follows
-is the method and the findings, which is the same line the related projects draw.
+The ROM bytes are MediaTek's and are not redistributed here; what follows is just
+the method and the findings, the same approach the related projects take.
 
 ## Why it is readable at all
 
@@ -87,7 +87,7 @@ between read back as zero.
 
 The ROM carries plaintext source-file paths and assert strings, which the stripped
 RAM firmware never had. These name the subsystems even though they are not usable
-as function-naming xrefs (see limits):
+as function-naming xrefs (see Limits below):
 
 ```
 mcu/system/rom/init/{sys_cache,sys_irq,Eint}.c     boot, cache, interrupt setup
@@ -115,7 +115,7 @@ Much of the ROM decompiles cleanly. Sampled ROM functions, including a 1219-byte
 one, decompile in well under a second; only the TIE-dense ones time out, the same
 as in RAM. ROM custom-TIE density is about 32 percent, close to the RAM image.
 
-## Honest limits
+## Limits
 
 - The ROM uses the same ID-based logging as the RAM firmware. None of the 38
   candidate source-path strings are pointer-referenced inside the ROM, so they
@@ -131,8 +131,9 @@ as in RAM. ROM custom-TIE density is about 32 percent, close to the RAM image.
 
 ## What it changes
 
-The "bytes were not in the blob" wall is gone. The boot path, the OS core, the
-host interface and USB transport, the eFuse and SPI drivers, and the coexistence
-code are now disassembled and largely readable. The grant leaf functions the
-scheduler delegates into are present and can be read directly, even though the
-RAM cluster that calls them remains undecompilable.
+The mask ROM was the main boundary for the static RE: the routines the RAM
+firmware called into were previously just absent bytes. With it dumped, the boot
+path, the ConnSys OS core, the host interface and USB transport, the eFuse and SPI
+drivers, and the coexistence code are disassembled and largely readable. The grant
+leaf functions the scheduler delegates into can now be read directly, even though
+the RAM cluster that calls them still does not decompile.
