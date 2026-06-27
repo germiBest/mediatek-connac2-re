@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  + Compile the SLEIGH languages in this module to .sla.
+  + Options are read from sleighArgs.txt.
+  + Requires GHIDRA_INSTALL_DIR (or .antProperties.xml from GhidraDev).
+  -->
+
+<project name="privateBuildDeveloper" default="sleighCompile">
+
+	<property name="sleigh.compile.class" value="ghidra.pcodeCPort.slgh_compile.SleighCompile"/>
+
+	<!-- ghidra.install.dir may come from environment or .antProperties.xml -->
+	<property environment="env"/>
+	<condition property="ghidra.install.dir" value="${env.GHIDRA_INSTALL_DIR}">
+		<isset property="env.GHIDRA_INSTALL_DIR"/>
+	</condition>
+	<import file="../.antProperties.xml" optional="true"/>
+
+	<target name="sleighCompile">
+		<property name="framework.path" value="${ghidra.install.dir}/Ghidra/Framework"/>
+		<path id="sleigh.class.path">
+			<fileset dir="${framework.path}/SoftwareModeling/lib"><include name="*.jar"/></fileset>
+			<fileset dir="${framework.path}/Generic/lib"><include name="*.jar"/></fileset>
+			<fileset dir="${framework.path}/Utility/lib"><include name="*.jar"/></fileset>
+		</path>
+		<available classname="${sleigh.compile.class}" classpathref="sleigh.class.path" property="sleigh.compile.exists"/>
+		<fail unless="sleigh.compile.exists" message="Set GHIDRA_INSTALL_DIR to your Ghidra installation."/>
+		<java classname="${sleigh.compile.class}" classpathref="sleigh.class.path" fork="true" failonerror="true">
+			<jvmarg value="-Xmx2048M"/>
+			<arg value="-i"/>
+			<arg value="sleighArgs.txt"/>
+			<arg value="-a"/>
+			<arg value="./languages"/>
+		</java>
+	</target>
+
+</project>

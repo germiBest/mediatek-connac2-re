@@ -1,0 +1,33 @@
+@define ENDIAN "little"
+
+# =====================================================================
+#  xtensa_mtk_le.slaspec
+#
+#  Standalone SLEIGH spec for the MediaTek connac2 Wi-Fi-MCU ("WM"/
+#  "neptune") Tensilica Xtensa LX core, little-endian, 32-bit, with the
+#  vendor custom-TIE coprocessor.
+#
+#  Targets: MT7961 / MT7921 / MT7915-family Wi-Fi firmware blobs.
+#
+#  This is the stock Ghidra Xtensa base ISA (xtensaArch / xtensaMain /
+#  xtensaInstructions, Apache-2.0, see NOTICE) PLUS xtensa-mtk.sinc, which
+#  adds length-correct, never-fail OPAQUE constructors for MediaTek's
+#  custom Tensilica TIE opcodes.  It is published under a DISTINCT language
+#  id (Xtensa:LE:32:MTK) so it coexists with stock Ghidra's Xtensa.
+#
+#  NOTE: this is the LE-only variant.  Unlike the stock xtensa_le.slaspec
+#  we DROP @include "flix.sinc" and "cust.sinc": the connac2 image has NO
+#  FLIX bundles, and cust.sinc's CUST0/CUST1 are superseded by the
+#  length-correct mtk_cust0/mtk_cust1 constructors in xtensa-mtk.sinc.
+# =====================================================================
+
+@include "xtensaArch.sinc"
+@include "xtensaMain.sinc"
+
+with : phase=1 {
+
+@include "xtensaInstructions.sinc"
+#@include "xtensa_depbits.sinc" # collides with floating point; off by default
+@include "xtensa-mtk.sinc"
+
+}

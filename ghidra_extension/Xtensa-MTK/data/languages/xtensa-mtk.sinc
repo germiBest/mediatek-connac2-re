@@ -1,0 +1,112 @@
+# =====================================================================
+#  xtensa-mtk.sinc   (CORRECTED: op0=E/F are 3-byte, not 4)
+#  MediaTek custom-TIE opcode coverage for the stock Ghidra Xtensa model.
+#
+#  Target: MT7961 / MT7972 Wi-Fi MCU firmware ("neptune"), Tensilica Xtensa
+#  LX, little-endian, with a vendor vector/DSP TIE coprocessor.
+#
+#  LENGTH RULE  (empirically established on region0.bin, see ghidra-work/
+#  opcodes.md and lentest_nextop.py):
+#     op0 in {E,F}          -> 3 bytes   (24-bit; NOT 4 - that was wrong)
+#     op0 in {8,9,A,B,C,D}  -> 2 bytes   (density / narrow)
+#     else (0..7)           -> 3 bytes
+#  Proof for E/F = 3 bytes: the byte at off+3 after an op0=E/F instruction
+#  has an op0 (low-nibble) distribution that matches the global instruction-
+#  start op0 histogram (=> it is the NEXT instruction's first byte).  Under a
+#  4-byte reading the off+3 byte would be an interior opcode/operand byte with
+#  a fixed structure; it is not.  Confirmed three independent ways.
+#
+#  All custom majors get LENGTH-CORRECT, never-fail catch-all constructors
+#  emitting an opaque CALLOTHER (define pcodeop) so the decompiler keeps
+#  control flow / function boundaries instead of aborting.  The base ISA
+#  constructors remain strictly more specific and continue to win.
+#
+#  Field analysis: beyond op0 (and op1 for CUST0/1) there is NO localized
+#  sub-opcode nibble in op0=E/F/4 - every other bit is operand-like.  So the
+#  operations cannot be individually NAMED without the MediaTek TIE/config;
+#  we surface the at/as/ar register nibbles for display only (no fabricated
+#  data flow, since the dest/src roles are unknown).
+# =====================================================================
+
+define pcodeop mtk_tie_e;    # op0 == 0xE   3-byte custom TIE
+define pcodeop mtk_tie_f;    # op0 == 0xF   3-byte custom TIE
+define pcodeop mtk_tie_4;    # op0 == 0x4   3-byte custom (MAC16 region)
+define pcodeop mtk_cust0;    # QRST CUST0   op0=0,op1=6  3-byte
+define pcodeop mtk_cust1;    # QRST CUST1   op0=0,op1=7  3-byte
+
+# ---------------------------------------------------------------------
+# op0 = 0xE / 0xF : 3-byte custom TIE.  Reuse the stock 24-bit `insn`
+# fields (op0/op1/op2/ar/as/at) so the length is exactly 3 bytes and the
+# constructor sits in the same decision tree as the base ISA.  Referencing
+# op1/op2/ar/as/at consumes the whole 24-bit word.
+# ---------------------------------------------------------------------
+:tie.e ar, as, at, "{op2="^op2^",op1="^op1^"}"
+  is op0=0xe & op1 & op2 & ar & as & at {
+    mtk_tie_e();
+}
+:tie.f ar, as, at, "{op2="^op2^",op1="^op1^"}"
+  is op0=0xf & op1 & op2 & ar & as & at {
+    mtk_tie_f();
+}
+
+# op0 = 0x4 : MAC16 opcode region, repurposed by MTK.  Catch-all behind the
+# stock MAC16 RRR constructors (which fix op1/op2 and so win when present).
+:tie.4 ar, as, at, "{op2="^op2^",op1="^op1^"}"
+  is op0=0x4 & op1 & op2 & ar & as & at {
+    mtk_tie_4();
+}
+
+# QRST CUST0 / CUST1 : permanently designer-reserved (op0=0, op1=6/7).
+:cust0 ar, as, at, "{op2="^op2^"}"
+  is op0=0x0 & op1=0x6 & op2 & ar & as & at {
+    mtk_cust0();
+}
+:cust1 ar, as, at, "{op2="^op2^"}"
+  is op0=0x0 & op1=0x7 & op2 & ar & as & at {
+    mtk_cust1();
+}
+
+# =====================================================================
+#  Residual coverage (always on here): the MT7961 image also uses vendor
+#  opcodes in other lanes that neither the stock model nor the scoped patch
+#  above covers.  Each block is a LEAST-specific catch-all (fixes only op0 /
+#  n_op0) so every stock base/density constructor still wins; these only
+#  fire when nothing else matches, turning a function-aborting decode error
+#  into an opaque CALLOTHER.  Lengths follow the verified rule.
+# =====================================================================
+define pcodeop mtk_tie_q;    # op0 == 0x0 QRST fallthrough (3-byte): covers op1=C..F, op2=7
+define pcodeop mtk_tie_2;    # op0 == 0x2 RRI8 fallthrough (3-byte)
+define pcodeop mtk_tie_3;    # op0 == 0x3 RRI8/RRI4 fallthrough (3-byte)
+define pcodeop mtk_tie_d;    # op0 == 0xD density fallthrough (2-byte): narrow ST3 r=1..14
+
+# op0 = 0x0 : QRST catch-all (behind every stock op0=0 op and CUST0/1).
+:tie.q ar, as, at, "{op2="^op2^",op1="^op1^"}"
+  is op0=0x0 & op1 & op2 & ar & as & at {
+    mtk_tie_q();
+}
+
+# op0 = 0x2 : RRI8 catch-all.
+:tie.2 at, as, "{r="^ar^",i="^ri8_si8^"}"
+  is op0=0x2 & ar & as & at & ri8_si8 {
+    mtk_tie_2();
+}
+
+# op0 = 0x3 : RRI8 / RRI4 catch-all.
+:tie.3 at, as, "{r="^ar^",i="^ri8_si8^"}"
+  is op0=0x3 & ar & as & at & ri8_si8 {
+    mtk_tie_3();
+}
+
+# op0 = 0xD : 2-byte density catch-all (behind stock mov.n/ret.n/nop.n...).
+# This is the narrow ST3 custom space (r = 1..14) - e.g. dd5d at 0x91740a.
+:tie.d n_ar, n_as, n_at is n_op0=0xd & n_ar & n_as & n_at {
+    mtk_tie_d();
+}
+
+# op0 = 0x6, BI1 group (n=3, m=1) with reserved r (not bf/bt/loop): a small
+# (~66 sites) custom branch-ish lane.  3 bytes.  Stock bf/bt/loop fix op_r and
+# win for r in {0,1,8,9,10}; this fires only for the reserved r values.
+define pcodeop mtk_tie_6;
+:tie.6 op_r is op0=0x6 & bri8_n=3 & bri8_m=1 & op_r & ri8_si8 {
+    mtk_tie_6();
+}

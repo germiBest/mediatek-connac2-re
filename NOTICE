@@ -1,0 +1,63 @@
+mediatek-connac2-re
+Copyright 2026 Denys Melnyk
+
+================================================================================
+ATTRIBUTION
+================================================================================
+
+This product contains software originally developed at the National Security
+Agency and released as part of Ghidra
+(https://github.com/NationalSecurityAgency/ghidra), licensed under the Apache
+License, Version 2.0.
+
+The following files in ghidra_extension/Xtensa-MTK/data/languages/ are derived
+from Ghidra/Processors/Xtensa/data/languages/ (Apache-2.0) and are reproduced
+verbatim or with minor modification:
+
+    xtensaArch.sinc
+    xtensaMain.sinc
+    xtensaInstructions.sinc
+    xtensa.cspec
+    xtensa.pspec
+    xtensa.dwarf
+    xtensa_le.slaspec (and associated ldefs / opinion scaffolding, where present)
+
+================================================================================
+ORIGINAL WORK & MODIFICATIONS
+================================================================================
+
+The following files were created or substantially modified by this project and
+are provided under the same Apache License, Version 2.0:
+
+  - xtensa_mtk_le.slaspec
+        New standalone spec that builds the stock Xtensa base ISA, removes the
+        @include directives for "flix.sinc" and "cust.sinc", and instead
+        @includes "xtensa-mtk.sinc".
+
+  - xtensa-mtk.sinc
+        New file authored specifically for this project. It adds length-correct,
+        opaque (CALLOTHER) constructors for MediaTek Connac2 "Neptune" custom-TIE
+        opcodes (op0 in {E,F,4}, QRST CUST0/CUST1, and the reserved RST/ST3/BI1
+        lanes). It functionally replaces Ghidra's flix.sinc and cust.sinc for
+        the purposes of this processor module.
+
+No warranty is provided for any purpose. See the LICENSE file for the full
+Apache License 2.0 text (http://www.apache.org/licenses/LICENSE-2.0).
+
+================================================================================
+PROPRIETARY CONTENT DISCLAIMER
+================================================================================
+
+This repository does NOT contain, redistribute, or reference any of the
+following:
+
+  - MediaTek proprietary source code, firmware blobs, or cryptographic keys
+  - Tensilica / Cadence proprietary TIE or processor configuration files
+  - Any confidential documentation licensed by MediaTek or its affiliates
+
+The custom opcodes are implemented as opaque intrinsics (CALLOTHER) precisely
+because the underlying vendor configuration is not public. All opcode
+encodings and semantics represented here were derived through independent
+reverse engineering of public firmware images and ISA behavior, and are
+expressed as abstract placeholders where the exact functional semantics are
+not publicly documented.

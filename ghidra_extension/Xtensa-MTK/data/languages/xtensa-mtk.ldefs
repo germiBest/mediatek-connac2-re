@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- See Relax specification: Ghidra/Framework/SoftwareModeling/data/languages/language_definitions.rxg -->
+
+<language_definitions>
+  <language processor="Xtensa"
+            endian="little"
+            size="32"
+            variant="MTK"
+            version="1.0"
+            slafile="xtensa_mtk_le.sla"
+            processorspec="xtensa.pspec"
+            id="Xtensa:LE:32:MTK">
+    <description>Tensilica Xtensa LX 32-bit LE, MediaTek connac2 Wi-Fi-MCU custom TIE (MT7961/MT7921/MT7915-family)</description>
+    <compiler name="default" spec="xtensa.cspec" id="default"/>
+    <external_name tool="gnu" name="xtensa"/>
+    <external_name tool="DWARF.register.mapping.file" name="xtensa.dwarf"/>
+  </language>
+</language_definitions>

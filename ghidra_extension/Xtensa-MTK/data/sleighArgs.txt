@@ -1,0 +1,3 @@
+# Sleigh compiler options (one per line, each starting with '-').
+# Used when compiling every language in this module.
+# IMPORTANT: do NOT specify -a here (the build file supplies it).

@@ -1,0 +1,22 @@
+*.bin
+*.asm
+WIFI_RAM_CODE_*
+WM_patch_*
+
+# --- build / run cruft ---
+*.log
+build.log
+.gradle/
+build/
+/proj/
+/ghproj/
+*.rep
+*.gpr
+*.lock
+.DS_Store
+
+# kaitai generated/build artifacts
+kaitai/*.py
+kaitai/__pycache__/
+kaitai/kaitai-struct-compiler*/
+kaitai/.ksc_path

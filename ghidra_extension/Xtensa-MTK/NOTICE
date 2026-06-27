@@ -1,0 +1,23 @@
+Xtensa-MTK  (Ghidra processor extension)
+========================================
+
+This extension is licensed under the Apache License, Version 2.0
+(see the LICENSE file).
+
+It includes, unmodified, the following base SLEIGH/spec files from the
+Ghidra project (NSA, Apache License 2.0), redistributed under the same
+license with attribution:
+
+    data/languages/xtensaArch.sinc
+    data/languages/xtensaMain.sinc
+    data/languages/xtensaInstructions.sinc
+    data/languages/xtensa.cspec
+    data/languages/xtensa.pspec
+    data/languages/xtensa.dwarf
+
+Ghidra:  https://github.com/NationalSecurityAgency/ghidra
+Copyright the Ghidra contributors.  Licensed under the Apache License 2.0.
+
+The file data/languages/xtensa-mtk.sinc and the spec/ldefs that bind it
+(xtensa_mtk_le.slaspec, xtensa-mtk.ldefs) are original work of the connac2
+firmware-RE project, also under the Apache License 2.0.
