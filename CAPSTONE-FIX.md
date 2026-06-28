@@ -52,4 +52,4 @@ Xtensa entirely through capstone now.
 
 ## Status
 
-Submitted to `capstone-engine/capstone` (branch `next`): <PR link to be added>.
+Submitted to `capstone-engine/capstone` (branch `next`).

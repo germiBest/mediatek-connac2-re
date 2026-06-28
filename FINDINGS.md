@@ -424,10 +424,7 @@ a BSS-count ceiling and not a host-driver limit.
 
 ## 8. Source artifacts
 
-The raw analysis backing every number above (carved regions, `decode.py`, the length-proof
-scripts `lentest_nextop.py` / `opcodes_analyze.py` / `lentest_branch.py` / `bit_entropy.py`, the
-Ghidra A/B harness, and the per-subsystem walker reports `SCHEDULER.md` / `mcc-scheduler.md` /
-`bss-network-type-map.md`) lives in a separate analysis tree (`firmware-re/` and
-`firmware-re/ghidra-work/`), not included in this repo. The opcode census and length proofs are
-written up in `ghidra-work/opcodes.md`; the firmware-architecture synthesis is
-`ghidra-work/walk/SCHEDULER.md`.
+The numbers above come from a linear sweep of the carved regions under the verified length
+rule, the four independent instruction-length proofs in §3, and the Ghidra A/B comparison in
+§6. The analysis scripts and per-subsystem disassembly notes are not included in this
+repository.

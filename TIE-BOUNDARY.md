@@ -54,14 +54,14 @@ logic, by construction.
 
 ## Dynamic attempts, and why they did not get past the wall
 
-- **Verbose firmware logging.** The lever is `FW_DBG_CTRL` (EXT cmd 0x95), confirmed
+- Verbose firmware logging. The lever is `FW_DBG_CTRL` (EXT cmd 0x95), confirmed
   present in the firmware (dispatch slot `0x02025ea8`, a real ~423-byte handler). We
   ported `mt7915_mcu_fw_dbg_ctrl` into mt7921 as a debugfs hook and set every log module
   to level 7. The command is accepted with no error, but the firmware emits nothing to the
   host through a full association, verified with a handler patched to surface every
   message of any type. The logs, if generated, stay in the chip's internal ring buffer and
   are never pushed out.
-- **Live chip memory.** Reads of the CR-bus regions (ROM at 0x800000, SRAM at 0x400000,
+- Live chip memory. Reads of the CR-bus regions (ROM at 0x800000, SRAM at 0x400000,
   registers) work and are safe, which is how the ROM was dumped. But the scheduler's state
   lives in WM-CPU DRAM (0x80000000), which is the core's local virtual space, not on the
   host bus; reading it destabilizes the chip. The coredump that would snapshot it requires
@@ -79,7 +79,7 @@ logic, by construction.
 
 ## Untouched areas that do not hit this wall
 
-The vendor TIE caps the WiFi MAC scheduler specifically. It does not cap everything. The
+The vendor TIE caps the Wi-Fi MAC scheduler specifically. It does not cap everything. The
 combo chip's Bluetooth firmware (`BT_RAM_CODE_MT7961`) is a separate connac2 blob the same
 tools parse, the host-controlled TLV parsers are named and auditable, and the same
 extension applies to the MT7922 and MT7915 family blobs. Those are open ground.
