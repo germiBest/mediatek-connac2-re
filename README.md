@@ -22,6 +22,9 @@ Three findings drove this work:
 | `ghidra_extension/` | A Ghidra processor extension that adds the language `Xtensa:LE:32:MTK`. It decodes the custom TIE ops as length-correct opaque instructions so the disassembler stays in sync and functions decompile instead of aborting. Prebuilt zip in `dist/`. |
 | `kaitai/` | Kaitai Struct parsers for the firmware container and for the in-image command / TLV dispatch tables, plus `COMMAND-MAP.md`, the full host-command surface of the MT7961 image. |
 | `FINDINGS.md` | The technical writeup: the Xtensa + TIE identification, the container format, the opcode/length notes, and the firmware architecture (command dispatch, CNM channel grant, MCC scheduler). |
+| `DEEP-FINDINGS.md` | Named firmware structures via the mt76 driver as a Rosetta Stone (the RLM channel TLV field-by-field, the dispatch tables, ~30 handlers), the SDK source availability, and the ROM subsystems (eFuse, HIF, boot). |
+| `ROM-DUMP.md` | How the WM mask ROM at `0x800000` was read off a live adapter over USB with no JTAG, what it contains, and what loading it into Ghidra recovered (4471 to 6511 functions). |
+| `CAPSTONE-FIX.md` | A capstone Xtensa decoding bug found via this RE (non-ESP32-S3 configs mis-decoded as 4-byte ee.* ops), and the upstream fix. |
 | `examples/` | A headless loader script and a function-count helper. |
 
 ## Install the Ghidra extension

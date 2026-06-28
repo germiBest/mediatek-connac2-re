@@ -20,3 +20,8 @@ kaitai/*.py
 kaitai/__pycache__/
 kaitai/kaitai-struct-compiler*/
 kaitai/.ksc_path
+
+# dumped ROM / firmware bytes (MediaTek, not redistributed)
+WIFI_ROM_*.bin
+*rom*.bin
+rom.bin
