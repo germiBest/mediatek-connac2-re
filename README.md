@@ -24,6 +24,7 @@ Three findings drove this work:
 | `FINDINGS.md` | The technical writeup: the Xtensa + TIE identification, the container format, the opcode/length notes, and the firmware architecture (command dispatch, CNM channel grant, MCC scheduler). |
 | `DEEP-FINDINGS.md` | Named firmware structures via the mt76 driver as a Rosetta Stone (the RLM channel TLV field-by-field, the dispatch tables, ~30 handlers), the SDK source availability, and the ROM subsystems (eFuse, HIF, boot). |
 | `ROM-DUMP.md` | How the WM mask ROM at `0x800000` was read off a live adapter over USB with no JTAG, what it contains, and what loading it into Ghidra recovered (4471 to 6511 functions). |
+| `TIE-BOUNDARY.md` | Why the MCC scheduler cannot be rendered (the vendor TIE, confirmed five ways including by emulation), what stays recoverable, and the untouched areas that do not hit the wall. |
 | `CAPSTONE-FIX.md` | A capstone Xtensa decoding bug found via this RE (non-ESP32-S3 configs mis-decoded as 4-byte ee.* ops), and the upstream fix. |
 | `examples/` | A headless loader script and a function-count helper. |
 
