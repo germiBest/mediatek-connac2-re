@@ -189,3 +189,81 @@ MT7961 has ROM drivers for two transports (MT7961U = USB).
 - eFuse data offsets and controller bit-fields are mt76/connac2-family cross-references, authoritative for the part but not read byte-by-byte from this ROM; the command path, 16 B block size, buffer mode, and handler addresses ARE firmware-verified.
 
 **Reproduce:** `cp -r /home/germi/src/mt76/firmware-re/ghidra-work/fullromproj /tmp/proj-<label>`; `analyzeHeadless /tmp/proj-<label> mtk7961full -process region0.bin -noanalysis -scriptPath <scripts> -postScript <Script>.java [args]` (use `ListFunc.java <addr>` for in-sync assembly, `RomDump.java` for the clean-corpus dump with per-function TIE% / callees). Decompile of the RLM handlers fails with "process: timeout", that failure is itself the evidence for the TIE limitation.
+
+## 4. Rosetta Stone part 2: STA_REC, DEV_INFO, remaining BSS TLVs
+
+Extends section 1 (RLM) with the per-station record and the rest of the command structures, same
+method: dispatch tables read as data, mt76 driver structs as the wire layout, clean base-ISA anchors.
+
+### 4.1 STA_REC_UPDATE is a two-pass TLV dispatch
+
+STA_REC_UPDATE (UNI cid 0x03) shares the container dispatcher FUN_009182ae but uses TWO
+`{u32 handler, u32 tag}` tables sitting directly above the BSS_INFO table in region1 rodata; both carry
+STA_REC-specific tags (HE_V2=0x19, PHY=0x15, HE_6G=0x17, BFEE=0x14). Table bytes [proven-data];
+struct attribution [inferred from the mt76 enum order].
+
+Pass-2 / primary table `@0x02017f80` (19 entries, the only table holding tag0 BASIC):
+
+| tag | name | handler | driver struct (`mt76_connac_mcu.h`) |
+|---|---|---|---|
+| 0x00 | STA_REC_BASIC | 0x00919e16 | `sta_rec_basic` (:289) |
+| 0x01 | STA_REC_RA | 0x0091b868 | `sta_rec_ra` (:572) |
+| 0x02 | STA_REC_RA_CMM_INFO | 0x0091b968 | `sta_rec_ra_info` (:398) |
+| 0x04 | STA_REC_BF | 0x0091ba1a | `sta_rec_bf` (:450) |
+| 0x05 | STA_REC_AMSDU | 0x0091ba74 | `sta_rec_amsdu` (:376) |
+| 0x06 | STA_REC_BA | 0x0091bad0 | `sta_rec_ba` (:331) |
+| 0x07 | STA_REC_STATE | 0x0091bafa | `sta_rec_state` (:385) |
+| 0x09 | STA_REC_HT | 0x0091bc76 | `sta_rec_ht` (:302) |
+| 0x0a | STA_REC_VHT | 0x0091bd18 | `sta_rec_vht` (:309) |
+| 0x0c | STA_REC_KEY | 0x0091bd62 | `sta_rec_sec` (:432) |
+| 0x0e | STA_REC_HE | 0x0091bd8e | `sta_rec_he` (:342) |
+| 0x11 | STA_REC_KEY_V2 | 0x0091bde4 | `sta_rec_sec` v2 (:440) |
+| 0x12 | STA_REC_MURU | 0x0091be0e | `sta_rec_muru` (:507) |
+
+Pass-1 / PHY-and-capability table `@0x02017ef0` (18 entries, no tag0; adds the rate/PHY-control tags
+the primary table lacks: BFEE 0x14, PHY 0x15 (handler in mask ROM `0xe027a9e8`), HE_6G 0x17, HE_V2 0x19;
+NULL handlers for AMSDU/BA = processed only in pass-2). Interpretation [inferred]: pass-2 is the main
+STA_REC parser, pass-1 is a second sweep that programs PHY/capability/rate-control state.
+
+### 4.2 sta_rec_basic, fully field-named
+
+tag 0x00, handler 0x00919e16 [proven-data]. The handler's first clean op `addi.n a2, a11, 0xc` pins
++0x0c = peer_addr [proven]. Layout [inferred from `struct sta_rec_basic`, `mt76_connac_mcu.h:289`,
+built by `mt76_connac_mcu_sta_basic_tlv()` `mt76_connac_mcu.c:371`]:
+
+```
++0x00 le16  tag         = 0x0000
++0x02 le16  len         = 0x0014 (20)
++0x04 le32  conn_type   STA_TYPE(low) | NETWORK(bit16+):
+                          INFRA_AP =0x00010002  INFRA_STA=0x00010001
+                          P2P_GO   =0x00020002  P2P_GC   =0x00020001
+                          IBSS     =0x00040004  INFRA_BC =0x00010020
++0x08 u8    conn_state  0=DISCONNECT 1=CONNECT 2=PORT_SECURE
++0x09 u8    qos
++0x0a le16  aid
++0x0c u8[6] peer_addr   <- addi.n a2,a11,0xc anchor [proven]
++0x12 le16  extra_info  VER=BIT0, NEW=BIT1
+```
+
+The `conn_type` values are the link to the scheduler finding: the firmware distinguishes AP / STA /
+P2P-GO / P2P-GC here, and the MCC quota roles cover STA, GO, GC but not AP, which is why a second
+infra-AP gets no concurrent channel.
+
+### 4.3 DEV_INFO_UPDATE
+
+UNI cid 0x01 -> dispatcher 0x00918340. One TLV, DEV_INFO_ACTIVE (=0); built by
+`mt76_connac_mcu_uni_add_dev()` `mt76_connac_mcu.c:1147` [inferred wire layout]: hdr {omac_idx,
+band_idx, pad}, then req_tlv {tag=0, len=0xc, active, link_idx, omac_addr[6]}. (No `tx_radio` struct
+on MT7961; that is connac3.)
+
+### 4.4 Remaining BSS_INFO TLVs
+
+Resolved against the driver [tag->handler proven, struct inferred]:
+
+| tag | name | handler | driver struct |
+|---|---|---|---|
+| 0x07 | BCN_CONTENT | 0x0091c384 | `bcn_content_tlv` (`mt7921/mcu.c:1243`): tim/csa/bcc ie pos, enable, type, pkt_len, pkt[512] |
+| 0x0b | RATE | 0x0091c022 | `bss_rate_tlv`: bc/mc trans, short_preamble, bc/mc fixed_rate |
+| 0x13 | UAPSD | 0x00919704 | BSS-level U-APSD enable (fw-side params; per-STA is `sta_rec_uapsd`) |
+| 0x15 | PS | 0x0091c092 | `ps_tlv` (`mt7921/mcu.c:946`): ps_state {0 awake,1 static,2 dynamic,3 enter TWT,4 leave TWT} |
+| 0x16 | BCNFT | 0x0091bf8c | `bcnft_tlv` (`mt7921/mcu.c:985`): bcn_interval, dtim_period |
