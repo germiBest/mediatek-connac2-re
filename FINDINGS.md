@@ -216,7 +216,7 @@ from LinkIt / OpenWrt / Filogic SDKs and all publicly documented RE efforts).
 ## 5. The SLEIGH decoder (`xtensa-mtk.sinc`)
 
 `xtensa-mtk.sinc` adds, behind the stock Xtensa constructors (which stay strictly more specific
-and continue to win), one length-correct, never-fail, opaque constructor per custom major.
+and continue to win), one opaque constructor per custom major that is length-correct and always matches.
 Each emits a `define pcodeop` `CALLOTHER` that takes no operands, so the disassembler stays in
 sync and the decompiler renders an opaque intrinsic instead of aborting, without fabricating
 data flow (the real operands are unknown).
@@ -271,7 +271,7 @@ Reading:
   abandoning functions.
 - 3-byte vs 4-byte is the correctness refinement. Both patched variants resolve every opcode
   and Ghidra re-syncs at control-flow targets, so the wrong 4-byte length only mis-decodes ~1
-  instruction after each E/F op instead of aborting, the headline gap looks modest, but the
+  instruction after each E/F op instead of aborting. The gap between the two patched variants looks modest, yet the
   analytically correct 3-byte length recovers +4,300 instructions, +97 functions, -4,006
   undefined bytes, and the bytes after every E/F op decode correctly instead of as garbage.
 - With deeper seeding (also seeding the WM ROM-patch from inbound call/jump refs), region0
@@ -373,7 +373,7 @@ absence path.
 
 `[proven-rodata]` SAP *is* a real role for beaconing/link-detect/CSA (`pm_sap.c`,
 `bss_sap_beacon.c`, `linkdt_sap.c`; `LinkDtSapCheckIntervalPureAp`, `GO_SAP[%d] IN_PROGRESS`), so
-the firmware fully supports one AP. It simply has no MCC quota / absence role to
+the firmware fully supports one AP. It has no MCC quota / absence role to
 time-share the single RF with a *second* concurrent BSS on another channel.
 
 ### 7.5 The single-RF / DBDC gate
@@ -401,8 +401,8 @@ A 2nd infra-AP BSS on a different channel needs one of two things; both are clos
 
 In summary: the 2nd AP either collapses onto the first AP's `prChInfo` (same channel/working-net) or
 gets no grant; only the first AP, holding the CNM grant on the single band-0 channel, beacons.
-This is a policy/role-table limitation (missing AP quota role + single usable band), not
-a BSS-count ceiling and not a host-driver limit.
+This is a policy/role-table limitation (missing AP quota role + single usable band), rather than
+a BSS-count ceiling or a host-driver limit.
 
 ### Caveat: proven vs inferred for §7.6
 

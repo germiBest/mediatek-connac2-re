@@ -24,7 +24,7 @@ Three findings drove this work:
 | `FINDINGS.md` | The technical writeup: the Xtensa + TIE identification, the container format, the opcode/length notes, and the firmware architecture (command dispatch, CNM channel grant, MCC scheduler). |
 | `DEEP-FINDINGS.md` | Named firmware structures via the mt76 driver as a Rosetta Stone (the RLM channel TLV field-by-field, the dispatch tables, ~30 handlers), the SDK source availability, and the ROM subsystems (eFuse, HIF, boot). |
 | `ROM-DUMP.md` | How the WM mask ROM at `0x800000` was read off a live adapter over USB with no JTAG, what it contains, and what loading it into Ghidra recovered (4471 to 6511 functions). |
-| `TIE-BOUNDARY.md` | Why the MCC scheduler cannot be rendered (the vendor TIE, confirmed five ways including by emulation), what stays recoverable, and the untouched areas that do not hit the wall. |
+| `TIE-BOUNDARY.md` | Why the MCC scheduler cannot be rendered (the vendor TIE, confirmed five ways including by emulation), what stays recoverable, and the untouched areas that do not hit this boundary. |
 | `CAPSTONE-FIX.md` | A capstone Xtensa decoding bug found via this RE (non-ESP32-S3 configs mis-decoded as 4-byte ee.* ops), and the upstream fix. |
 | `examples/` | A headless loader script and a function-count helper. |
 
@@ -85,7 +85,7 @@ Compile and run with `kaitai-struct-compiler` 0.11 and the Python runtime.
   modeled semantics, because MediaTek never published the Tensilica TIE config.
   About 73% of the image is base Xtensa with real mnemonics; the rest is the
   vendor coprocessor. Function boundaries, control flow, and the call graph all
-  survive, which is what makes the firmware navigable.
+  survive, so the firmware stays navigable.
 - The mask ROM at `0x800000-0x900000` is not part of the downloadable blob, so
   the leaf helper routines that reside there cannot be read.
 - The DBGLOG numeric-id to format-string database is host-side only. There is no
@@ -105,8 +105,8 @@ should apply, but they are not byte-verified here.
 
 ## Related work
 
-MediaTek firmware RE splits across processors. This repo is the connac2 Wi-Fi
-MCU piece. The neighbours:
+MediaTek firmware RE splits across processors. This repo covers the connac2
+Wi-Fi MCU; related projects handle the neighbouring cores:
 
 - [`cyrozap/mediatek-wifi-re`](https://github.com/cyrozap/mediatek-wifi-re):
   earlier work on the older-generation MediaTek Wi-Fi cores (MT76x7 and similar),
@@ -118,7 +118,7 @@ MCU piece. The neighbours:
   `DbgInfo` symbol file. Same toolset shape as this repo (a Ghidra processor
   module plus Kaitai container unpackers), different processor.
 
-So on a MediaTek device the modem is nanoMIPS and the connac2 Wi-Fi is the Xtensa
+On a MediaTek device the modem is nanoMIPS and the connac2 Wi-Fi is the Xtensa
 core handled here. Unlike the baseband, connac2 Wi-Fi
 firmware is stripped and uses host-side ID logging, so there are no symbols to
 import.

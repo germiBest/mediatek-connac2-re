@@ -1,28 +1,28 @@
 # Xtensa-MTK: a Ghidra processor extension for MediaTek connac2 Wi-Fi-MCU firmware
 
 A self-contained Ghidra processor extension that adds a new language,
-`Xtensa:LE:32:MTK`, for disassembling/decompiling the MediaTek *connac2*
+`Xtensa:LE:32:MTK`, for disassembling and decompiling the MediaTek *connac2*
 Wi-Fi-MCU ("WM" / "neptune") firmware found on MT7961 / MT7921 / MT7922 /
-MT7915-family chips. These blobs are a Tensilica Xtensa LX core (little-endian, 32-bit) with
-a vendor custom-TIE coprocessor; stock tools cannot decode them (capstone/LLVM
+MT7915-family chips. The blobs run on a Tensilica Xtensa LX core (little-endian, 32-bit) paired with
+a vendor custom-TIE coprocessor, and stock tools cannot decode them: capstone and LLVM
 mis-model op0=E/F as 4-byte ESP32-S3 `ee.*` ops, which is wrong for MediaTek, and
-the vendor TIE config was never published).
+the vendor TIE config was never published.
 
 The extension installs alongside Ghidra's stock Xtensa (distinct language id and
 slafile), so nothing about the built-in Xtensa changes.
 
 ## What it does
 
-`xtensa-mtk.sinc` adds length-correct, never-fail, OPAQUE constructors
-(`define pcodeop mtk_tie_*`) for MediaTek's custom Tensilica opcodes:
+`xtensa-mtk.sinc` adds opaque constructors (`define pcodeop mtk_tie_*`) that are
+length-correct and never fail to decode, covering MediaTek's custom Tensilica opcodes:
 op0=0xE/0xF (3-byte), op0=0x4 (3-byte, repurposed MAC16 slot), QRST CUST0/CUST1
-(op1=6/7), narrow ST3 density (op0=0xD), and residual QRST/RRI8 lanes. The verified
-length rule is: op0 in {8..0xD} = 2 bytes, else 3 bytes (no FLIX, no 4-byte).
-Every custom major emits an opaque `CALLOTHER` so the decompiler keeps control flow
-and function boundaries instead of aborting. The base ISA constructors remain
+(op1=6/7), narrow ST3 density (op0=0xD), and the residual QRST/RRI8 lanes. The verified
+length rule: op0 in {8..0xD} = 2 bytes, otherwise 3 bytes (no FLIX, no 4-byte).
+Every custom major emits an opaque `CALLOTHER`, which keeps the decompiler tracking control flow
+and function boundaries rather than aborting. The base ISA constructors stay
 strictly more specific and always win, so ~73% of the image keeps real Ghidra
-mnemonics. The custom ops are genuinely opaque (no sub-opcode field; the vendor TIE
-overlay was never published), length-correct opaque is the ceiling.
+mnemonics. The custom ops carry no sub-opcode field and the vendor TIE
+overlay was never published, so length-correct opaque decoding is as far as this can go.
 
 ## Install
 
@@ -57,13 +57,13 @@ Import a connac2 region image as Raw Binary, then set:
 * Base address: the region's load address (e.g. region0 code = `0x915000` on MT7961)
 
 Or use the bundled `LoadConnac2Firmware` script (Script Manager ▸ search
-"connac2", under category MTK.Connac2) authored by the companion loader work: import the
-raw `.bin` with `Xtensa:LE:32:MTK`, run the script, and it parses the connac2
+"connac2", under category MTK.Connac2) from the companion loader work: import the
+raw `.bin` with `Xtensa:LE:32:MTK` and run the script. It parses the connac2
 container, maps every region, adds ROM/DRAM stubs, sets the entry point, and seeds
 disassembly automatically.
 
 Then run normal auto-analysis. For the full MT7961 layout, map the other regions
-(rodata `0x02015c00`, `0x404400`, IRAM `0xe0270000`, `0x0`) as additional blocks -
+(rodata `0x02015c00`, `0x404400`, IRAM `0xe0270000`, `0x0`) as additional blocks;
 see the `AddBlocks.java` / `SeedCode.java` helper scripts in the firmware-RE tree.
 
 ## Verified result (this build)
@@ -84,8 +84,8 @@ METRIC functions_total=4471
 Plain AddBlocks + SeedCode on region0 (465 code-pointer seeds, no deeper seeding)
 recovers ~2,173 functions; the 4,471 above adds seeding from inbound call/jump
 refs (see FINDINGS.md §6). Either way every opcode resolves, with zero bad or
-unresolved instructions. (Stock Ghidra Xtensa on the same blob recovers only a
-handful of functions and floods with bad/unresolved instructions.)
+unresolved instructions. By comparison, stock Ghidra Xtensa on the same blob recovers only a
+handful of functions and floods the listing with bad and unresolved instructions.
 
 ## Rebuild from source
 
@@ -93,10 +93,10 @@ handful of functions and floods with bad/unresolved instructions.)
 export GHIDRA_INSTALL_DIR=/opt/ghidra
 ./build.sh            # recompiles the .sla and repacks dist/Xtensa-MTK-ghidra_12.1.zip
 ```
-`build.sh` just runs `$GHIDRA_INSTALL_DIR/support/sleigh` on the slaspec and zips the
-module. SLEIGH compiles clean, only the two pre-existing stock Xtensa warnings
+`build.sh` runs `$GHIDRA_INSTALL_DIR/support/sleigh` on the slaspec and zips the
+module. SLEIGH compiles clean apart from the two pre-existing stock Xtensa warnings
 ("2 NOP constructors", "1 unnecessary extension/truncation → copy"); the MTK
-additions introduce zero new warnings, and the resulting `.sla` is byte-identical
+additions introduce no new warnings, and the resulting `.sla` is byte-identical
 to a stock+mtk build.
 
 ## Layout
