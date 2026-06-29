@@ -7,8 +7,8 @@ hard boundary for the static RE here: several scheduler leaf functions delegate
 into it. This documents how the ROM was read off a live adapter with no JTAG, and
 what it contains.
 
-The ROM bytes are MediaTek's and are not redistributed here; what follows is just
-the method and the findings, the same approach the related projects take.
+The ROM bytes are MediaTek's and are not redistributed here. What follows is the
+method and the findings, the same approach the related projects take.
 
 ## Why it is readable at all
 
@@ -123,8 +123,9 @@ as in RAM. ROM custom-TIE density is about 32 percent, close to the RAM image.
   host-side, as it is for the RAM image.
 - Loading the ROM did not make the RAM CNM cluster decompile. Those functions
   still time out, which confirms the cause is custom-TIE density plus unmodeled
-  special-register varnodes, not the decompiler chasing into unmapped ROM. The
-  literal quota role-switch stays sealed for that reason, not for lack of bytes.
+  special-register varnodes rather than the decompiler chasing into unmapped ROM.
+  The literal quota role-switch stays sealed for that reason; the bytes were never
+  the problem.
 - The dump captures memory as the host bus sees it. The sparse mapped windows in
   `0x860000-0x8fffff` are included; the zero ranges between them are unmapped, not
   data.

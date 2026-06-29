@@ -18,9 +18,9 @@ repo, and the custom TIE ops have no public semantics.
   TLV tag mapped to its handler address and cross-referenced against the `mt76`
   driver enums.
 
-This is the connac2 counterpart to the older-format `.ksy` files in
-[`mediatek-wifi-re`](https://github.com/cyrozap/mediatek-wifi-re), earlier work covering
-the older-generation ILM/DLM, `MTKW`/`MTKE`, and `.ALPS` patch containers.
+These files are the connac2 counterpart to the older-format `.ksy` files in
+[`mediatek-wifi-re`](https://github.com/cyrozap/mediatek-wifi-re), which covers the
+older-generation ILM/DLM, `MTKW`/`MTKE`, and `.ALPS` patch containers.
 
 ## Build and run
 

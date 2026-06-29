@@ -1,4 +1,4 @@
-# MT7961 (connac2) Wi-Fi MCU Firmware: Consolidated RE Findings
+# MT7961 (connac2) Wi-Fi MCU firmware: consolidated RE findings
 
 Target: MediaTek connac2 MT7961 Wi-Fi MCU, Tensilica Xtensa LX core with custom vendor TIE (op0 = 0x4 / 0xE / 0xF). Artifacts: `region0.bin` RAM code @ `0x915000`, `region1.bin` rodata @ `0x02015c00`, `WIFI_ROM_MT7961_full.bin` 1 MB mask ROM @ `0x800000`. Driver cross-reference: the upstream `mt76` driver.
 
@@ -121,7 +121,7 @@ These paths and symbols are present as strings in `region1.bin` / `WIFI_RAM_CODE
 1. Host channel-manager header, gen4m `include/mgmt/cnm.h`: `MSG_CH_REQ` / `MSG_CH_GRANT` / `MSG_CH_ABORT`, `CNM_INFO{fgChGranted,ucBssIndex,ucTokenID}`, enums `ENUM_CH_SWITCH_TYPE` / `ENUM_CNM_DBDC_MODE` / `ENUM_CNM_DBDC_SWITCH_MECHANISM`, funcs `cnmChMngrRequestPrivilege` / `AbortPrivilege` / `HandleChEvent`. Fetch-confirmed it does not contain `getMinimumQuotaTime` / `ENUM_CNM_QUOTA_CHINFO`.
    - https://github.com/EndCredits/android_kernel_oppo_mt6893 (`.../wlan/core/gen4m/include/mgmt/cnm.h`, also `mgmt/cnm.c`)
    - https://github.com/realme-kernel-opensource/realmeC12_realmeC15_AndroidR-kernel-source
-2. Host-side MCC quota config (closest proxy to the quota knobs), gen4m `mgmt/ais_fsm.c` parses `MccDualStaAIS0QuotaTimeInUs` / `MccDualStaAIS1QuotaTimeInUs`, the dual-STA analogue of the firmware's per-role STA/GO/GC quota. Confirms a host-pushed MCC quota-config interface, but not the scheduler (which runs on-MCU).
+2. Host-side MCC quota config (closest proxy to the quota knobs), gen4m `mgmt/ais_fsm.c` parses `MccDualStaAIS0QuotaTimeInUs` / `MccDualStaAIS1QuotaTimeInUs`, the dual-STA analogue of the firmware's per-role STA/GO/GC quota. This confirms a host-pushed MCC quota-config interface but not the scheduler, which runs on-MCU.
    - https://github.com/xiaomi-mediatek-devs/android_kernel_xiaomi_mt6877 , https://github.com/Rohail33/Realking_xiaomi_xaga , https://github.com/NothingOSS/android_kernel_modules_nothing_mt6886 , https://github.com/LineageOS/android_kernel_xiaomi_mt6785 , https://github.com/cyberknight777/dragonheart_kernel_motorola_cancunf (all `.../gen4m/mgmt/ais_fsm.c`)
 3. Newest connac host tree (mt6639 / mt7927-class), has `MID_MNY_CNM_CH_REQ`: https://github.com/zouyonghao/mt7927 (`mt6639/mgmt/`).
 4. Shipped wifi.cfg proving the tokens are a wifi.cfg/registry namespace: `ScnMissThreshold 8` present; the `Mcc*`/`Cnm*` quota knobs are not in the public cfgs (compiled defaults). https://github.com/lenovo-mt6765/proprietary_vendor_lenovo_mt6765-common , https://github.com/who53/rom-dump-lenovo-akita , https://github.com/J6idot/vendor_device_x606x
@@ -143,7 +143,7 @@ Command path [proven, data/strings]:
 - Reads are 16-byte blocks (strings `"eFuse block:0x%x read succeed!"` @ `0x02022038`, `"...FAILED!"` @ `0x02022058`, `"Invalid eFuse access cmd!(%x)"` @ `0x02022078`, file `wsys_efuse_info.c` @ `0x02022098`). 16 B/block = AIN masked to ~0xf + 4 RDATA words = the standard connac efuse macro.
 - Buffer-mode shadow: `EXT_CMD_EFUSE_BUFFER_MODE` uploads the whole efuse image into a RAM shadow; firmware then reads config from the shadow, not the controller. Strings `"rlmCmdEfuseBufferModeRead"` @ `0x02021788`, `"Buffer mode content length too large %d (> %d)"` @ `0x020215e0`, radio config parse `"Efuse: ucIso %d"` @ `0x0201f6b0`, `"EfuseOrWfCfg: BwcMode %d, TddMode %d"` @ `0x02020444`.
 
-Controller register model [inferred, connac2-family cross-ref; not read from ROM ops]: conn_infra efuse = `conn_infra+0x020` (host `0x18001020`; MCU view based at `MT_INFRA_MCU_START=0x7c000000`). TOP path = `TOP+0x1cc` (host `0x180601cc`). `EFUSE_CTRL = base+0x008`: AIN = `GENMASK(25,16)` (addr & ~0xf), MODE = `GENMASK(7,6)`, VALID = `BIT(29)`, KICK = `BIT(30)`, AOUT = `GENMASK(5,0)`; RDATA[0..3] = `base+0x010` (16 B/block). Note [proven, negative]: a literal-pool census found no co-located KICK/VALID/AIN signature next to an MMIO base, i.e. the WM ROM does not do a classic kick/poll in a clean literal pool, consistent with reads going through the buffer-mode RAM shadow and/or conn_infra auto-load, the controller only being touched on the explicit `EFUSE_ACCESS` command.
+Controller register model [inferred, connac2-family cross-ref; not read from ROM ops]: conn_infra efuse = `conn_infra+0x020` (host `0x18001020`; MCU view based at `MT_INFRA_MCU_START=0x7c000000`). TOP path = `TOP+0x1cc` (host `0x180601cc`). `EFUSE_CTRL = base+0x008`: AIN = `GENMASK(25,16)` (addr & ~0xf), MODE = `GENMASK(7,6)`, VALID = `BIT(29)`, KICK = `BIT(30)`, AOUT = `GENMASK(5,0)`; RDATA[0..3] = `base+0x010` (16 B/block). Note [proven, negative]: a literal-pool census found no co-located KICK/VALID/AIN signature next to an MMIO base, i.e. the WM ROM does not do a classic kick/poll in a clean literal pool, consistent with reads going through the buffer-mode RAM shadow and/or conn_infra auto-load; the controller is touched only on the explicit `EFUSE_ACCESS` command.
 
 eFuse data layout (LE byte offsets) [inferred, MT7961 == mt7921 connac2 map, from driver]: `0x000` CHIP_ID (=0x7961), `0x002` VERSION, `0x004` MAC_ADDR[6], `0x00a` MAC_ADDR2[6] (band1), `0x050` DDIE_FT_VERSION, `0x062` DO_PRE_CAL, `0x07c` WIFI_CONF (CONF0: TX_PATH `G(2,0)`, RX_PATH `G(5,3)`, BAND_SEL `G(7,6)`), `0x252`/`0x29d` RATE_DELTA_2G/5G (val `G(5,0)`, sign `BIT6`, en `BIT7`), `0x2fc`/`0x34b` TX0_POWER_2G/5G, `0x55b` HW_TYPE (adie variant), `0x9a0` ADIE_FT_VERSION, `0x9ff` `__MT_EE_MAX`. WIFI_CAL flags: GROUP `BIT0`, DPD_5G `BIT1`, DPD_2G `BIT2`, DPD_6G `BIT3`. Regulatory note: no dedicated efuse region field on this part, country comes from host CLC; efuse carries only band capability + the BWC/TDD/ISO flags logged above.
 
@@ -178,8 +178,8 @@ Decompiling the RLM handlers fails with `process: timeout`; that failure is itse
 
 ## 4. Rosetta Stone part 2: STA_REC, DEV_INFO, remaining BSS TLVs
 
-Extends section 1 (RLM) with the per-station record and the rest of the command structures, same
-method: dispatch tables read as data, mt76 driver structs as the wire layout, clean base-ISA anchors.
+This section extends section 1 (RLM) with the per-station record and the rest of the command structures,
+using the same method: dispatch tables read as data, mt76 driver structs as the wire layout, clean base-ISA anchors.
 
 ### 4.1 STA_REC_UPDATE is a two-pass TLV dispatch
 
